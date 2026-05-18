@@ -1,85 +1,100 @@
 # Financial News Sentiment Analysis
 
-A multi-model NLP project for sentiment classification of financial news, progressing from classical machine learning to fine-tuned transformer models.
+A comparative study of classical machine learning models and transformer-based architectures for sentiment classification on financial news headlines.
 
-## Overview
+## 📋 Overview
 
-This project classifies financial news sentences into three sentiment categories — **negative**, **neutral**, and **positive** — using the [auditor_sentiment](https://huggingface.co/datasets/FinanceInc/auditor_sentiment) dataset from Hugging Face. The goal is to extract actionable sentiment signals from financial text, with applications in market analysis and risk assessment.
+This project benchmarks twelve different approaches to classify financial news sentences into three sentiment classes (**negative**, **neutral**, **positive**), comparing both performance and computational cost. The goal is to quantify the trade-off between simple lexical methods (TF-IDF) and modern contextual embeddings (BERT-based models).
 
-## Dataset
+## 🎯 Key Results
 
-- **Source:** Hugging Face — `FinanceInc/auditor_sentiment`
-- **Task:** Multi-class text classification (3 classes: negative / neutral / positive)
-- **Split:** 80% training / 20% test (stratified)
-- Preprocessing includes duplicate removal, class distribution analysis, and profiling via `ydata-profiling`
+| Model | Macro-F1 | Training time | Cost (USD) |
+|---|---|---|---|
+| BernoulliNB | 0.48 | 0.002 s | $3 × 10⁻⁸ |
+| Logistic Regression (TF-IDF + SVD) | **0.64** | 0.07 s | $10⁻⁶ |
+| Sentence-BERT + LogReg | 0.73 | 12 s | $1.7 × 10⁻³ |
+| **DistilBERT fine-tuned** | **0.82** | 176 s | $2.5 × 10⁻² |
 
-## Methodology
+DistilBERT fine-tuned achieves the best performance, but Logistic Regression on TF-IDF features captures ~78% of its macro-F1 at a fraction of the cost.
 
-The project is structured in 4 progressive classifier generations:
+## 📚 Dataset
 
-### Part 1 — Data Preparation
-- Text cleaning: lowercasing, special character removal, stopword filtering (NLTK)
-- Lemmatization with **spaCy** (`en_core_web_sm`)
-- Vectorization with **TF-IDF**
-- Dimensionality reduction with **TruncatedSVD** (170 components)
+This project uses the [**Financial PhraseBank**](https://huggingface.co/datasets/takala/financial_phrasebank) dataset, available on Hugging Face. It consists of ~4,840 English sentences from financial news, manually annotated with sentiment labels (negative / neutral / positive) by 16 annotators with financial background.
 
-### Part 2 — Classifier 1.0 (TF-IDF baseline)
-- Logistic Regression
-- Decision Tree
-- Random Forest
+The dataset is class-imbalanced:
+- **Neutral**: ~59%
+- **Positive**: ~28%
+- **Negative**: ~13%
 
-### Part 3 — Classifier 2.0 (hyperparameter tuning)
-- Logistic Regression (grid search)
-- Random Forest (grid search over `n_estimators`, `max_depth`, `max_features`)
-- Decision Tree (grid search over `max_depth`, `criterion`, `min_samples_*`)
-- Gaussian Naive Bayes
-- Bernoulli Naive Bayes (on binarized TF-IDF)
-
-### Part 4 — Classifier 3.0 (Sentence Embeddings)
-- **Sentence-BERT** (`all-MiniLM-L6-v2`) for dense text embeddings
-- Logistic Regression on top of SBERT vectors
-
-### Part 5 — Classifier 4.0 (Fine-Tuned Transformer)
-- **DistilBERT** (`distilbert-base-uncased`) fine-tuned for sequence classification
-- 3-class output head, trained with HuggingFace `Trainer` API
-- Dynamic padding, `learning_rate=2e-5`, `weight_decay=0.01`
-
-## Tech Stack
-
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
-![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat&logo=jupyter&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat&logo=scikit-learn&logoColor=white)
-![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21F?style=flat&logo=huggingface&logoColor=black)
-![spaCy](https://img.shields.io/badge/spaCy-09A3D5?style=flat&logo=spacy&logoColor=white)
-![NLTK](https://img.shields.io/badge/NLTK-3D7EAA?style=flat)
-![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white)
-
-**Key libraries:** `transformers`, `sentence-transformers`, `datasets`, `scikit-learn`, `spacy`, `nltk`, `pandas`, `ydata-profiling`
-
-## Project Structure
+## 🗂️ Project Structure
 
 ```
 Financial-News-Sentiment-Analysis/
-├── Code.ipynb       # Main notebook (all 5 parts)
-├── train.csv        # Training set (80%)
-└── test.csv         # Test set (20%)
+├── data/                       # Raw and processed datasets
+├── Code.ipynb                  # Main analysis notebook
+├── requirements.txt
+└── README.md
 ```
 
-## Getting Started
+## 🛠️ Tech Stack
+
+- **Language**: Python 3.11
+- **Classical ML**: scikit-learn, scipy
+- **NLP**: spaCy, NLTK
+- **Transformers**: Hugging Face `transformers`, `sentence-transformers`, PyTorch
+- **Analysis**: pandas, numpy, matplotlib
+
+## 🚀 Setup
 
 ```bash
-git clone https://github.com/MaxenceChan/Financial-News-Sentiment-Analysis.git
+# Clone the repository
+git clone https://github.com/<your-username>/Financial-News-Sentiment-Analysis.git
 cd Financial-News-Sentiment-Analysis
 
-pip install pandas scikit-learn nltk spacy ydata-profiling \
-            sentence-transformers transformers datasets evaluate \
-            accelerate torch
+# Install dependencies
+pip install -r requirements.txt
 
+# Download spaCy English model
 python -m spacy download en_core_web_sm
-jupyter notebook Code.ipynb
 ```
 
-## Author
+The dataset is loaded directly from Hugging Face — no manual download required:
 
-**Maxence Chan** — Data Scientist | Finance & Risk  
-[LinkedIn](https://linkedin.com/in/maxence-chan) · [GitHub](https://github.com/MaxenceChan)
+```python
+from datasets import load_dataset
+ds = load_dataset("takala/financial_phrasebank", "sentences_allagree")
+```
+
+## 📊 Methodology
+
+The project follows a three-part pipeline:
+
+**1. Preprocessing**
+Text cleaning, tokenization, lemmatization, and stopword removal using spaCy.
+
+**2. Classical models (TF-IDF + SVD)**
+TF-IDF vectorization followed by dimensionality reduction via Truncated SVD (`n_components=500`, chosen empirically by tracking macro-F1). Models compared: Logistic Regression, Gaussian/Bernoulli Naive Bayes, Decision Tree, Random Forest.
+
+**3. Transformer-based models**
+- **Sentence-BERT** (`all-MiniLM-L6-v2`) used as a frozen encoder + Logistic Regression head.
+- **DistilBERT** (`distilbert-base-uncased`) fine-tuned end-to-end on the task.
+
+All models are evaluated on the same train/test split using:
+- **Macro-F1** as the primary metric (chosen over accuracy due to class imbalance)
+- **MSE** on ordinal labels (to capture severity of misclassifications)
+- **Total time** (training + inference) and **estimated computational cost**
+
+## 📈 Why Macro-F1 instead of Accuracy?
+
+The Financial PhraseBank is imbalanced (~60% neutral, ~28% positive, ~12% negative). Accuracy would be mechanically inflated by performance on the majority class and mask weaknesses on the minority ones. Macro-F1 weights each class equally and reflects the operational usefulness of the model — crucial since detecting negative financial news is often more valuable than classifying yet another neutral headline.
+
+## 💡 Key Takeaways
+
+- **Transformers dominate raw performance**, with fine-tuned DistilBERT reaching 0.82 macro-F1.
+- **Logistic Regression on TF-IDF + SVD is a remarkably strong baseline**, achieving 0.64 macro-F1 in 70 ms — roughly 700,000× cheaper than DistilBERT for ~78% of its performance.
+- **Naive Bayes, Decision Trees, and Random Forests underperform** on this task (0.39–0.48 macro-F1), suggesting that the bottleneck lies in the model class itself rather than in feature engineering.
+- **Choice of vectorization matters more than choice of classifier**: moving from TF-IDF to contextual embeddings yields a larger gain than tuning any individual model.
+
+## 📄 License
+
+This project is provided for educational purposes.
